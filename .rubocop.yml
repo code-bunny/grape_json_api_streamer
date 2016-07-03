@@ -1,0 +1,6 @@
+inherit_from: .hound.yml
+
+Documentation:
+  Enabled: false
+NumericLiterals:
+  MinDigits: 10
