@@ -28,10 +28,17 @@ class MockAPI < Grape::API
   content_type :json, 'application/json;charset=UTF-8'
 
   resource :foo do
+    params do
+      optional :limit, type: Integer
+    end
     get do
-      model  = Model.new(1)
-      model2 = Model.new(2)
-      stream Grape::JSONAPI::Streamer.new([model, model2])
+      models = [Model.new(1), Model.new(2)]
+      if params[:limit]
+        options = { 'meta' => { 'total-records' => 100 }, 'links' => { 'self' => '/foo?limit=2' } }
+        stream Grape::JSONAPI::Streamer.new(models, options)
+      else
+        stream Grape::JSONAPI::Streamer.new(models)
+      end
     end
   end
 end
@@ -43,28 +50,63 @@ class StreamerSpec < Minitest::Spec
     MockAPI
   end
 
-  let(:body) do
-    {
-      'data' => [
-        {
-          'type'       => 'models',
-          'id'         => '1',
-          'attributes' => { 'foo'  => 'bar' },
-          'links'      => { 'self' => '/models/1' }
-        }, {
-          'type'       => 'models',
-          'id'         => '2',
-          'attributes' => { 'foo'  => 'bar' },
-          'links'      => { 'self' => '/models/2' }
-        }
-      ]
-    }
+  context 'when no options' do
+    let(:body) do
+      {
+        'data' => [
+          {
+            'type'       => 'models',
+            'id'         => '1',
+            'attributes' => { 'foo'  => 'bar' },
+            'links'      => { 'self' => '/models/1' }
+          }, {
+            'type'       => 'models',
+            'id'         => '2',
+            'attributes' => { 'foo'  => 'bar' },
+            'links'      => { 'self' => '/models/2' }
+          }
+        ]
+      }
+    end
+
+    it 'should output json response' do
+      get '/foo'
+
+      assert_equal body, JSON.parse(last_response.body)
+      assert_equal 200, last_response.status
+    end
   end
 
-  it 'should output json response' do
-    get '/foo'
+  context 'when meta and links options provided' do
+    let(:body) do
+      {
+        'meta' => {
+          'total-records' => 100
+        },
+        'data' => [
+          {
+            'type'       => 'models',
+            'id'         => '1',
+            'attributes' => { 'foo'  => 'bar' },
+            'links'      => { 'self' => '/models/1' }
+          }, {
+            'type'       => 'models',
+            'id'         => '2',
+            'attributes' => { 'foo'  => 'bar' },
+            'links'      => { 'self' => '/models/2' }
+          }
+        ],
+        'links' => {
+          'self' => '/foo?limit=2'
+        }
+      }
+    end
 
-    assert_equal body, JSON.parse(last_response.body)
-    assert_equal 200, last_response.status
+    it 'should output json response' do
+      get '/foo?limit=2'
+
+      assert_equal body, JSON.parse(last_response.body)
+      assert_equal 200, last_response.status
+    end
   end
 end
