@@ -10,7 +10,7 @@ module Grape
 
       def each
         yield '{'
-        yield "\"meta\": #{@options[:meta].to_json}," if @options[:meta]
+        yield "\"meta\": #{JSON.unparse(@options[:meta])}," if @options[:meta]
         yield '"data":['
         first = true
         @collection.lazy.each do |object|
@@ -22,7 +22,7 @@ module Grape
           yield buffer
         end
         yield ']'
-        yield ",\"links\": #{@options[:links].to_json}" if @options[:links]
+        yield ",\"links\": #{JSON.unparse(@options[:links])}" if @options[:links]
         yield '}'
       end
 

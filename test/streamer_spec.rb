@@ -34,7 +34,7 @@ class MockAPI < Grape::API
     get do
       models = [Model.new(1), Model.new(2)]
       if params[:limit]
-        options = { 'meta' => { 'total-records' => 100 }, 'links' => { 'self' => '/foo?limit=2' } }
+        options = { 'meta' => { 'total-records' => 100 }, 'links' => { 'self' => '/foo?limit=2&offset=0' } }
         stream Grape::JSONAPI::Streamer.new(models, options)
       else
         stream Grape::JSONAPI::Streamer.new(models)
@@ -97,7 +97,7 @@ class StreamerSpec < Minitest::Spec
           }
         ],
         'links' => {
-          'self' => '/foo?limit=2'
+          'self' => '/foo?limit=2&offset=0'
         }
       }
     end
