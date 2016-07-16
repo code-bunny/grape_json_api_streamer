@@ -6,11 +6,13 @@ module Grape
       def initialize(collection, options = {})
         @collection = collection
         @options    = ActiveSupport::HashWithIndifferentAccess.new(options)
+        @meta       = @options[:meta]
+        @links      = @options[:links]
       end
 
       def each
         yield '{'
-        yield "\"meta\": #{JSON.unparse(@options[:meta])}," if @options[:meta]
+        yield "\"meta\": #{JSON.unparse(@meta)}," if @meta
         yield '"data":['
         first = true
         @collection.lazy.each do |object|
@@ -22,12 +24,15 @@ module Grape
           yield buffer
         end
         yield ']'
-        yield ",\"links\": #{JSON.unparse(@options[:links])}" if @options[:links]
+        yield ",\"links\": #{JSON.unparse(@links)}" if @links
         yield '}'
       end
 
       def serialize(model)
-        ::JSONAPI::Serializer.serialize(model, is_collection: false)
+        @options.delete(:meta)
+        @options.delete(:links)
+        @options[:is_collection] = false
+        ::JSONAPI::Serializer.serialize(model, @options)
       end
     end
   end
